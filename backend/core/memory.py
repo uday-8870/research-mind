@@ -1,25 +1,20 @@
-"""
-Vector Memory — ChromaDB persistent store for document chunks.
-Enables cross-session memory and similarity search.
-"""
 import hashlib
 from typing import Optional
 import chromadb
 from chromadb.config import Settings as ChromaSettings
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from backend.core.config import get_settings
 
 settings = get_settings()
 
-# Initialize ChromaDB
 _client = chromadb.PersistentClient(
     path=settings.chroma_persist_dir,
     settings=ChromaSettings(anonymized_telemetry=False),
 )
 
-_embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    api_key=settings.openai_api_key,
+_embeddings = HuggingFaceEmbeddings(
+    model_name="all-MiniLM-L6-v2",
+    model_kwargs={"device": "cpu"},
 )
 
 
@@ -35,7 +30,6 @@ def upsert_chunks(
     metadatas: list[dict],
     collection_name: str = "research_docs",
 ) -> int:
-    """Embed and store document chunks. Returns number inserted."""
     collection = get_or_create_collection(collection_name)
     embeddings = _embeddings.embed_documents(chunks)
     ids = [
@@ -57,7 +51,6 @@ def similarity_search(
     collection_name: str = "research_docs",
     where: Optional[dict] = None,
 ) -> list[dict]:
-    """Search for relevant chunks. Returns list of {text, metadata, distance}."""
     collection = get_or_create_collection(collection_name)
     query_embedding = _embeddings.embed_query(query)
 
